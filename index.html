@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luz Farma — Sistema de facturación</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#EDE6D3;
+    --paper:#FBF7EC;
+    --ink:#241F1A;
+    --ink-soft:#5A5347;
+    --green:#164B36;
+    --green-light:#2C7A57;
+    --gold:#A9761F;
+    --red:#963226;
+    --line:#D6CBA9;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Zilla Slab', serif;
+    min-height:100vh;
+  }
+
+  /* ---------- top bar ---------- */
+  header.topbar{
+    background:var(--green);
+    color:var(--paper);
+    padding:22px 32px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    border-bottom:6px solid var(--gold);
+  }
+  header.topbar h1{
+    margin:0;
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:0.3px;
+  }
+  header.topbar .ruc{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:#D9E8DD;
+  }
+
+  /* ---------- layout ---------- */
+  main{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:0;
+    min-height:calc(100vh - 78px);
+  }
+  @media (max-width:820px){
+    main{grid-template-columns:1fr;}
+  }
+
+  .counter{
+    background:var(--paper);
+    padding:32px 28px;
+    border-right:1px solid var(--line);
+  }
+  @media (max-width:820px){
+    .counter{border-right:none; border-bottom:1px solid var(--line);}
+  }
+
+  .counter h2{
+    font-size:15px;
+    text-transform:none;
+    margin:0 0 4px 0;
+    color:var(--green);
+  }
+  .counter p.hint{
+    margin:0 0 22px 0;
+    color:var(--ink-soft);
+    font-size:14px;
+    line-height:1.5;
+  }
+
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:14px 0 5px 0;
+  }
+  input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    color:var(--ink);
+  }
+  input:focus{
+    outline:2px solid var(--green-light);
+    outline-offset:1px;
+  }
+
+  button{
+    font-family:'Zilla Slab', serif;
+    font-weight:600;
+    font-size:15px;
+    border:none;
+    border-radius:3px;
+    padding:11px 18px;
+    cursor:pointer;
+    background:var(--green);
+    color:var(--paper);
+    margin-top:20px;
+    width:100%;
+  }
+  button:hover{background:var(--green-light);}
+  button:disabled{background:#B9B2A0; cursor:not-allowed;}
+
+  .progress{
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px dashed var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .progress strong{color:var(--ink);}
+
+  .turno-summary{
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px dashed var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    display:none;
+  }
+  .turno-summary.show{display:block;}
+
+  /* ---------- receipt roll ---------- */
+  .roll{
+    padding:32px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:24px;
+    overflow-y:auto;
+  }
+  .roll .empty{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin-top:60px;
+    text-align:center;
+    max-width:280px;
+    line-height:1.6;
+  }
+
+  .receipt{
+    width:100%;
+    max-width:380px;
+    background:var(--paper);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--ink);
+    padding:22px 22px 16px 22px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+    position:relative;
+    animation:drop 0.35s ease;
+  }
+  @keyframes drop{
+    from{transform:translateY(-14px); opacity:0;}
+    to{transform:translateY(0); opacity:1;}
+  }
+  .receipt::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:-9px;
+    height:16px;
+    background:
+      linear-gradient(-45deg, var(--paper) 8px, transparent 0),
+      linear-gradient(45deg, var(--paper) 8px, transparent 0);
+    background-size:16px 16px;
+    background-repeat:repeat-x;
+    background-position:bottom;
+  }
+
+  .receipt .center{text-align:center;}
+  .receipt .farmacia{
+    font-family:'Zilla Slab', serif;
+    font-weight:700;
+    font-size:17px;
+    color:var(--green);
+    letter-spacing:0.5px;
+  }
+  .receipt .ruc-line{color:var(--ink-soft); font-size:12px; margin-top:2px;}
+  .receipt hr{
+    border:none;
+    border-top:1px dashed var(--line);
+    margin:10px 0;
+  }
+  .receipt .titulo{
+    text-align:center;
+    font-weight:600;
+    margin:2px 0 8px 0;
+    letter-spacing:1px;
+  }
+  .receipt .row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:2px 0;
+  }
+  .receipt .row .k{color:var(--ink-soft);}
+  .receipt .row .v{text-align:right;}
+  .receipt .descuento .v{color:var(--red);}
+  .receipt .total .v{color:var(--green); font-weight:600;}
+  .receipt .total{
+    border-top:1px solid var(--ink);
+    margin-top:6px;
+    padding-top:6px;
+    font-size:14px;
+  }
+  .receipt .badge{
+    display:inline-block;
+    margin-top:8px;
+    font-size:11px;
+    color:var(--gold);
+    border:1px solid var(--gold);
+    padding:2px 6px;
+    border-radius:2px;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Farmacia Luz Farma</h1>
+  <span class="ruc">R.U.C. 20123456789</span>
+</header>
+
+<main>
+  <section class="counter">
+
+    <!-- Paso 1: apertura de turno -->
+    <div id="setup-block">
+      <h2>Apertura de turno</h2>
+      <p class="hint">Ingresa tu nombre y la cantidad de clientes que vas a atender para empezar a emitir facturas.</p>
+
+      <label for="nombreCajero">Nombre del cajero</label>
+      <input id="nombreCajero" type="text" placeholder="Ej. María Torres">
+
+      <label for="cantidadClientes">Cantidad de clientes</label>
+      <input id="cantidadClientes" type="number" min="1" step="1" placeholder="Ej. 3">
+
+      <button id="btnIniciar">Iniciar turno</button>
+    </div>
+
+    <!-- Paso 2: datos del cliente actual -->
+    <div id="cliente-block" style="display:none;">
+      <h2>Registrar venta</h2>
+      <p class="hint" id="clientePos"></p>
+
+      <label for="nombreCliente">Nombre del cliente</label>
+      <input id="nombreCliente" type="text" placeholder="Ej. Juan Pérez">
+
+      <label for="nombreProducto">Nombre del producto</label>
+      <input id="nombreProducto" type="text" placeholder="Ej. Paracetamol 500mg">
+
+      <label for="cantidadProducto">Cantidad</label>
+      <input id="cantidadProducto" type="number" min="1" step="1" placeholder="Ej. 2">
+
+      <label for="precioProducto">Precio unitario (S/)</label>
+      <input id="precioProducto" type="number" min="0" step="0.01" placeholder="Ej. 12.50">
+
+      <button id="btnRegistrar">Emitir factura</button>
+
+      <div class="progress">
+        Cliente <strong id="progresoActual">1</strong> de <strong id="progresoTotal">1</strong>
+      </div>
+    </div>
+
+    <!-- Paso 3: turno cerrado -->
+    <div id="fin-block" class="turno-summary">
+      <h2>Turno cerrado</h2>
+      <p class="hint">Cajero asignado: <strong id="cajeroFinal"></strong>. Se emitieron <strong id="totalFacturas"></strong> facturas.</p>
+      <button id="btnReiniciar">Nuevo turno</button>
+    </div>
+
+  </section>
+
+  <section class="roll" id="roll">
+    <p class="empty" id="rollEmpty">Las facturas emitidas aparecerán aquí, una debajo de otra, como en el programa original.</p>
+  </section>
+</main>
+
+<script>
+  const setupBlock = document.getElementById('setup-block');
+  const clienteBlock = document.getElementById('cliente-block');
+  const finBlock = document.getElementById('fin-block');
+  const roll = document.getElementById('roll');
+  const rollEmpty = document.getElementById('rollEmpty');
+
+  let cantidadClientes = 0;
+  let clienteActual = 0;
+  let nombreCajero = '';
+
+  function fechaHoraLima(){
+    // Simula ahora_peru = datetime.now(ZoneInfo("America/Lima"))
+    const opciones = {
+      timeZone:'America/Lima',
+      day:'2-digit', month:'2-digit', year:'numeric',
+      hour:'2-digit', minute:'2-digit', second:'2-digit',
+      hour12:false
+    };
+    const partes = new Intl.DateTimeFormat('es-PE', opciones).formatToParts(new Date());
+    const get = t => partes.find(p => p.type === t).value;
+    return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}:${get('second')}`;
+  }
+
+  document.getElementById('btnIniciar').addEventListener('click', () => {
+    const nombre = document.getElementById('nombreCajero').value.trim();
+    const cantidad = parseInt(document.getElementById('cantidadClientes').value, 10);
+
+    if(!nombre){
+      alert('Ingresa tu nombre de cajero.');
+      return;
+    }
+    if(!Number.isInteger(cantidad) || cantidad < 1){
+      alert('Ingresa una cantidad de clientes válida (mayor a 0).');
+      return;
+    }
+
+    nombreCajero = nombre;
+    cantidadClientes = cantidad;
+    clienteActual = 1;
+
+    document.getElementById('progresoTotal').textContent = cantidadClientes;
+    document.getElementById('progresoActual').textContent = clienteActual;
+    actualizarPosicion();
+
+    setupBlock.style.display = 'none';
+    clienteBlock.style.display = 'block';
+  });
+
+  function actualizarPosicion(){
+    document.getElementById('clientePos').textContent =
+      `Completa los datos del cliente ${clienteActual} de ${cantidadClientes}.`;
+    document.getElementById('progresoActual').textContent = clienteActual;
+  }
+
+  document.getElementById('btnRegistrar').addEventListener('click', () => {
+    const nombreCliente = document.getElementById('nombreCliente').value.trim();
+    const nombreProducto = document.getElementById('nombreProducto').value.trim();
+    const cantidadProducto = parseInt(document.getElementById('cantidadProducto').value, 10);
+    const precioProducto = parseFloat(document.getElementById('precioProducto').value);
+
+    if(!nombreCliente || !nombreProducto || !Number.isInteger(cantidadProducto) || cantidadProducto < 1 || isNaN(precioProducto) || precioProducto < 0){
+      alert('Completa todos los campos con valores válidos.');
+      return;
+    }
+
+    const importeTotal = cantidadProducto * precioProducto;
+    const descuento = importeTotal > 30 ? importeTotal * 0.10 : 0;
+    const totalAPagar = importeTotal - descuento;
+
+    emitirFactura({
+      fechaHora: fechaHoraLima(),
+      nombreCliente, nombreProducto, cantidadProducto, precioProducto,
+      importeTotal, descuento, totalAPagar
+    });
+
+    // limpiar campos para el siguiente cliente
+    document.getElementById('nombreCliente').value = '';
+    document.getElementById('nombreProducto').value = '';
+    document.getElementById('cantidadProducto').value = '';
+    document.getElementById('precioProducto').value = '';
+
+    if(clienteActual >= cantidadClientes){
+      clienteBlock.style.display = 'none';
+      document.getElementById('cajeroFinal').textContent = nombreCajero;
+      document.getElementById('totalFacturas').textContent = cantidadClientes;
+      finBlock.classList.add('show');
+    } else {
+      clienteActual += 1;
+      actualizarPosicion();
+      document.getElementById('nombreCliente').focus();
+    }
+  });
+
+  document.getElementById('btnReiniciar').addEventListener('click', () => {
+    finBlock.classList.remove('show');
+    document.getElementById('nombreCajero').value = '';
+    document.getElementById('cantidadClientes').value = '';
+    setupBlock.style.display = 'block';
+    document.getElementById('nombreCajero').focus();
+  });
+
+  function moneda(n){
+    return 'S/ ' + n.toFixed(2);
+  }
+
+  function emitirFactura(d){
+    if(rollEmpty) rollEmpty.remove();
+
+    const card = document.createElement('div');
+    card.className = 'receipt';
+    card.innerHTML = `
+      <div class="center farmacia">Farmacia Luz Farma</div>
+      <div class="center ruc-line">R.U.C. 20123456789</div>
+      <hr>
+      <div class="titulo">Factura de venta</div>
+      <div class="row"><span class="k">Fecha y hora</span><span class="v">${d.fechaHora}</span></div>
+      <div class="row"><span class="k">Cliente</span><span class="v">${d.nombreCliente}</span></div>
+      <hr>
+      <div class="row"><span class="k">Producto</span><span class="v">${d.nombreProducto}</span></div>
+      <div class="row"><span class="k">Cantidad</span><span class="v">${d.cantidadProducto}</span></div>
+      <div class="row"><span class="k">Precio unitario</span><span class="v">${moneda(d.precioProducto)}</span></div>
+      <div class="row"><span class="k">Importe total</span><span class="v">${moneda(d.importeTotal)}</span></div>
+      <div class="row descuento"><span class="k">Descuento (10% si &gt; S/30)</span><span class="v">${moneda(d.descuento)}</span></div>
+      <div class="row total"><span class="k">Total a pagar</span><span class="v">${moneda(d.totalAPagar)}</span></div>
+      ${d.descuento > 0 ? '<div class="center"><span class="badge">Descuento aplicado</span></div>' : ''}
+    `;
+    roll.appendChild(card);
+    card.scrollIntoView({behavior:'smooth', block:'end'});
+  }
+</script>
+
+</body>
+</html>
